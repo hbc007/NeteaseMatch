@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云盘音乐批量自动匹配
 // @namespace    http://tampermonkey.net/
-// @version      0.8
+// @version      0.9
 // @description  自动读取云盘音乐列表，并自动匹配对应歌曲
 // @author       hbc007
 // @match        https://music.163.com/*
@@ -179,7 +179,7 @@
                 let minIndex = dists.indexOf(minDist);
                 let selectSong = candicateSongs[minIndex];
                 console.log(minDist, song.songId, song.songName, song.artist, " > ", selectSong.id, selectSong.name, selectSong.artists[0].name, selectSong.album.name);
-                //doNextMatch(800);
+                doNextMatch(800);
                 return;
             }
             let minIndex = dists.indexOf(minDist);
