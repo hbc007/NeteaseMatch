@@ -10,8 +10,8 @@
 // @license      GPLv3.0
 // @grant        none
 // @homepageURL  https://github.com/hbc007/NeteaseMatch
-// @updateURL    https://cdn.jsdelivr.net/gh/hbc007/NeteaseMatch@latest/netease_match.js
-// @downloadURL  https://cdn.jsdelivr.net/gh/hbc007/NeteaseMatch@latest/netease_match.js
+// @updateURL    https://cdn.jsdelivr.net/gh/hbc007/NeteaseMatch@latest/netease_match.user.js
+// @downloadURL  https://cdn.jsdelivr.net/gh/hbc007/NeteaseMatch@latest/netease_match.user.js
 // ==/UserScript==
 
 (function () {
