@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云盘音乐批量自动匹配
 // @namespace    http://tampermonkey.net/
-// @version      0.9
+// @version      1.0.1
 // @description  自动读取云盘音乐列表，并自动匹配对应歌曲
 // @author       hbc007
 // @match        https://music.163.com/*
@@ -20,6 +20,8 @@
     // Your code here...
     let logFrame;
     let startBtn;
+    let failedSongs = [];
+    let songIdx = 0;
 
     var levenshteinenator = (function () {
         /**
@@ -90,7 +92,7 @@
 
     function getYunPanList() {
         return new Promise((resolve, reject) => {
-            fetch("https://music.163.com/api/v1/cloud/get?limit=0200")
+            fetch("https://music.163.com/api/v1/cloud/get?limit=1000")
                 .then((response) => response.json())
                 .then(function (data) {
                     resolve(data.data);
@@ -113,6 +115,9 @@
 
     async function main() {
         let yunSongs;
+        songIdx = 0;
+        failedSongs = [];
+
         try {
             yunSongs = await getYunPanList();
         } catch (e) {
@@ -120,19 +125,20 @@
             console.error(e);
             if (e.code === 405) {
                 log("API调用次数超限制, 请稍后再试");
-                setTimeout(hideLogFrame, 2000);
+                setTimeout(summary,500);
+                setTimeout(hideLogFrame, 4000);
                 return;
             }
             return;
         }
-        let songIdx = 0;
 
         let doNextMatch = (timeout = 0) => {
             setTimeout(() => {
                 songIdx = songIdx + 1;
                 if (songIdx >= yunSongs.length) {
                     log("匹配完成");
-                    setTimeout(hideLogFrame, 2000);
+                    setTimeout(summary,500);
+                    setTimeout(hideLogFrame, 4000);
                     return;
                 }
                 doMatch();
@@ -153,9 +159,11 @@
             } catch (e) {
                 log("搜索歌曲失败:", song.songId, song.songName, song.artist, e.message);
                 console.error(e);
+                failedSongs.push(song);
                 if (e.code === 405) {
                     log("API调用次数超限制, 请稍后再试");
-                    setTimeout(hideLogFrame, 2000);
+                    setTimeout(summary,500);
+                    setTimeout(hideLogFrame, 4000);
                     return;
                 }
                 doNextMatch(800);
@@ -174,18 +182,15 @@
                 dists.push(d1[d1.length - 1][d1[d1.length - 1].length - 1] + d2[d2.length - 1][d2[d2.length - 1].length - 1] + d3[d3.length - 1][d3[d3.length - 1].length - 1] + d4 + d5);
             }
             let minDist = Math.min(...dists);
-            if (minDist > 100) {
+            if (candicateSongs.length == 0 || isNaN(minDist) || minDist > 100) {
                 log("找不到对应歌曲:", song.songId, song.songName, song.artist);
-                let minIndex = dists.indexOf(minDist);
-                let selectSong = candicateSongs[minIndex];
-                console.log(minDist, song.songId, song.songName, song.artist, " > ", selectSong.id, selectSong.name, selectSong.artists[0].name, selectSong.album.name);
+                failedSongs.push(song);
                 doNextMatch(800);
                 return;
             }
             let minIndex = dists.indexOf(minDist);
             let selectSong = candicateSongs[minIndex];
             log("找到对应歌曲:", selectSong.id, selectSong.name, selectSong.artists[0].name, selectSong.album.name);
-
             console.log(song.songId, song.songName, song.artist, " > ", selectSong.id, selectSong.name, selectSong.artists[0].name, selectSong.album.name);
 
             try {
@@ -194,14 +199,17 @@
                     log("匹配成功:", song.songId, song.songName, song.artist, " > ", selectSong.id, selectSong.name, selectSong.artists[0].name, selectSong.album.name);
                 } else {
                     log("匹配失败:", song.songId, song.songName, song.artist, matchResult.message);
+                    failedSongs.push(song);
                     console.log(matchResult);
                 }
             } catch (e) {
                 log("匹配失败:", song.songId, song.songName, song.artist);
                 console.error(e);
+                failedSongs.push(song);
                 if (e.code === 405) {
                     log("API调用次数超限制, 请稍后再试");
-                    setTimeout(hideLogFrame, 2000);
+                    setTimeout(summary,500);
+                    setTimeout(hideLogFrame, 4000);
                     return;
                 }
             }
@@ -230,6 +238,13 @@
     function hideLogFrame() {
         logFrame.style.display = "none";
         startBtn.style.display = "block";
+    }
+
+    function summary() {
+        logFrame.innerText = `匹配成功: [${songIdx+1-failedSongs.length}/${songIdx+1}]\n匹配失败: [${failedSongs.length}/${songIdx+1}]\n`;
+        for (let song of failedSongs) {
+            logFrame.innerText += `- ${song.songId} ${song.songName} ${song.artist}\n`;
+        }
     }
 
     function init() {
